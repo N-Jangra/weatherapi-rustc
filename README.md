@@ -98,17 +98,6 @@ Mahendragarh, India: 34°C, Partly Cloudy
 * [`dotenvy`](https://crates.io/crates/dotenvy) – for loading `.env` variables
 * [`colored`](https://crates.io/crates/colored) – for colorful CLI output
 
----
 
-##  TODO
 
-* Add unit tests
-* Support for weekly summary
-* Option to export output to CSV
-
----
-
-##  License
-
-MIT © 2025 N-Jangra
 
