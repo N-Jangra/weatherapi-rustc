@@ -1,103 +1,171 @@
-# 🌤️ Weather CLI Tool (Rust)
+# Weather CLI & Web App
 
-A simple, colorful command-line weather forecast application written in Rust. It uses the [WeatherAPI](https://www.weatherapi.com/) to fetch current weather and hourly forecasts for a specified location.
+A weather application that provides both CLI and web interfaces, built with Rust using Tera templates for the frontend.
 
----
+## Features
 
-##  Features
+- **Current Weather**: Get real-time weather conditions
+- **Hourly Forecasts**: Detailed hourly predictions
+- **Multi-day Forecasts**: Up to 14 days of weather data
+- **Rain Alerts**: Visual indicators for high rain probability (≥40%)
+- **Responsive Design**: Mobile-friendly web interface
+- **CLI Support**: Original command-line interface maintained
 
--  Current weather conditions
--  Hourly forecast up to 3 days
--  Color-coded output for rain chances (red if ≥ 40%)
--  Location-based search
--  Environment-based API key handling
--  Smart date filtering (ignores past hours from today)
+## Prerequisites
 
----
+1. **Weather API Key**: Get a free API key from [WeatherAPI.com](https://www.weatherapi.com/)
+2. **Rust**: Install Rust from [rustup.rs](https://rustup.rs/)
 
-##  Usage
+## Setup
 
-###  Prerequisites
-
-- [Rust](https://www.rust-lang.org/tools/install)
-- A free API key from [weatherapi.com](https://www.weatherapi.com/)
-
-###  Setup
-
-1. Clone the repository:
-
+1. **Clone or create the project structure**:
 ```bash
-git clone https://github.com/N-Jangra/weatherapi-rustc
+mkdir weatherapi-rustc
 cd weatherapi-rustc
-````
-
-2. Create a `.env` file in the root directory and add your API key:
-
-```env
-WEATHER_API_KEY=your_weatherapi_key_here
 ```
 
-3. Build the project:
+2. **Create the .env file**:
+```bash
+echo "WEATHER_API_KEY=your_api_key_here" > .env
+```
 
+3. **Create the project structure**:
+```
+weatherapi-rustc/
+├── src/
+│   ├── main.rs              # Web server
+│   ├── lib.rs               # Library exports
+│   ├── models.rs            # Data structures
+│   ├── weather_service.rs   # Weather API service
+│   └── bin/
+│       └── cli.rs           # CLI version
+├── templates/
+│   ├── base.html            # Base template
+│   ├── index.html           # Home page
+│   ├── weather.html         # Weather results
+│   └── error.html           # Error page
+├── Cargo.toml
+├── .env
+└── README.md
+```
+
+4. **Install dependencies**:
 ```bash
 cargo build
 ```
 
-4. Run the CLI:
+## Usage
 
+### Web Interface
+
+1. **Start the web server**:
 ```bash
-cargo run -- "Location" [days]
+cargo run --bin weather-web
 ```
 
-* **Location**: Name of the city/town (e.g., `"Mahendragarh"`)
-* **Days** (optional): Number of forecast days (1–14, default: 1). The CLI limits output to a maximum of 3 days.
+2. **Open your browser** and navigate to:
+```
+http://localhost:3000
+```
 
----
+3. **Use the interface**:
+   - Enter a location (city name, coordinates, etc.)
+   - Select number of forecast days (1-14)
+   - Click "Get Weather" to see results
 
-###  Example
+### CLI Interface
 
+**Run the original CLI version**:
 ```bash
-cargo run -- "Mahendragarh" 5
+# Default location (India) for 1 day
+cargo run --bin weather-cli
+
+# Specific location
+cargo run --bin weather-cli "London"
+
+# Specific location and days
+cargo run --bin weather-cli "New York" 3
 ```
 
-**Sample Output:**
+## API Information
 
-```text
-Mahendragarh, India: 34°C, Partly Cloudy
+- **Free Tier**: Provides up to 3 days of forecast data
+- **Rate Limits**: 1 million calls per month on free tier
+- **Data Updates**: Weather data is updated frequently throughout the day
 
-📅 Forecast for 2025-08-03:
+## Environment Variables
 
-08:30 - 36°C, 0%, Sunny
-09:30 - 36°C, 79%, Patchy rain nearby  <-- Red if rain ≥ 40%
-...
+- `WEATHER_API_KEY`: Your WeatherAPI.com API key (required)
 
-📅 Forecast for 2025-08-04:
-...
-```
+## Features Explained
 
----
+### Web Interface Features
 
-##  Project Structure
+- **Responsive Design**: Works on desktop and mobile devices
+- **Real-time Updates**: Auto-refresh every 30 minutes
+- **Visual Indicators**: 
+  - High rain probability hours are highlighted in red
+  - Past hours are shown dimmed for today's forecast
+  - Current day is marked with a "Today" badge
 
-```text
-├── src
-│   ├── main.rs       # CLI logic
-│   └── models.rs     # Structs for deserializing Weather API response
-├── .env              # Contains WEATHER_API_KEY
-├── Cargo.toml        # Rust dependencies
-└── README.md         # You're here!
-```
+### Data Display
 
----
+- **Current Conditions**: Temperature and weather description
+- **Hourly Forecast**: Time, temperature, rain chance, and conditions
+- **Multi-day View**: Organized by date with expandable hourly data
+- **Smart Filtering**: Shows only future hours for today, all hours for future days
 
-##  Dependencies
+### Error Handling
 
-* [`reqwest`](https://docs.rs/reqwest) – for making HTTP requests
-* [`serde`](https://serde.rs/) – for JSON parsing
-* [`chrono`](https://docs.rs/chrono/) – for handling time and date
-* [`dotenvy`](https://crates.io/crates/dotenvy) – for loading `.env` variables
-* [`colored`](https://crates.io/crates/colored) – for colorful CLI output
+- **API Errors**: Graceful handling of API failures
+- **Invalid Locations**: Clear error messages for invalid city names
+- **Network Issues**: Proper error reporting for connectivity problems
 
+## Development
 
+### Project Structure
 
+- `src/main.rs`: Axum web server with route handlers
+- `src/weather_service.rs`: Async service for API calls and data processing
+- `src/models.rs`: Serde structs for API response deserialization
+- `templates/`: Tera HTML templates with shared base template
+- `src/bin/cli.rs`: Original CLI implementation
 
+### Dependencies
+
+- **Web Framework**: Axum (async web framework)
+- **Templates**: Tera (Django-like template engine)
+- **HTTP Client**: Reqwest (for API calls)
+- **Time Handling**: Chrono (timezone-aware date/time)
+- **Styling**: Embedded CSS with Font Awesome icons
+
+### Customization
+
+You can customize the appearance by modifying the CSS in `templates/base.html` or add new routes in `src/main.rs`.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"WEATHER_API_KEY not set"**
+   - Ensure your `.env` file exists and contains your API key
+   - Check that the key is valid on WeatherAPI.com
+
+2. **Template errors**
+   - Ensure the `templates/` directory exists
+   - Check that all template files are in place
+
+3. **API errors**
+   - Verify your internet connection
+   - Check if you've exceeded API rate limits
+   - Ensure location names are spelled correctly
+
+4. **Port already in use**
+   - The web server runs on port 3000 by default
+   - Kill any existing processes or change the port in `main.rs`
+
+### Getting Help
+
+- Check the WeatherAPI.com documentation for API-related issues
+- Ensure all dependencies are properly installed with `cargo build`
+- Review error messages in the console for specific issues
