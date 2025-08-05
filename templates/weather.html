@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Weather for {{ weather.location.name }} - Weather App{% endblock title %}
+
+{% block content %}
+<!-- Quick Search Bar -->
+<div class="search-container">
+    <form class="search-form" action="/weather" method="get">
+        <div class="form-group">
+            <label for="location">
+                <i class="fas fa-map-marker-alt"></i> Search Location
+            </label>
+            <input 
+                type="text" 
+                id="location" 
+                name="location" 
+                placeholder="Try: London, New York, Tokyo..." 
+                value="{{ location }}"
+                required
+            >
+        </div>
+        
+        <div class="form-group">
+            <label for="days">
+                <i class="fas fa-calendar-alt"></i> Forecast Period
+            </label>
+            <select id="days" name="days">
+                <option value="1" {% if days == 1 %}selected{% endif %}>Today Only</option>
+                <option value="2" {% if days == 2 %}selected{% endif %}>Next 2 Days</option>
+                <option value="3" {% if days == 3 %}selected{% endif %}>Next 3 Days</option>
+                <option value="5" {% if days == 5 %}selected{% endif %}>This Week (5 days)</option>
+                <option value="7" {% if days == 7 %}selected{% endif %}>One Week</option>
+                <option value="10" {% if days == 10 %}selected{% endif %}>10 Days</option>
+                <option value="14" {% if days == 14 %}selected{% endif %}>Two Weeks</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn">
+            <i class="fas fa-search"></i>
+            Update Forecast
+        </button>
+    </form>
+</div>
+
+<!-- Current Weather Summary -->
+<div class="weather-card">
+    <div class="current-weather">
+        <div class="location-header">
+            <h2>
+                <i class="fas fa-map-marker-alt"></i>
+                {{ weather.location.name }}, {{ weather.location.country }}
+            </h2>
+            <div class="weather-summary">
+                <div class="temp-display">
+                    <span class="current-temp">{{ weather.current.temp_c | round }}°C</span>
+                    <span class="feels-like">({{ (weather.current.temp_c * 1.8 + 32) | round }}°F)</span>
+                </div>
+                <div class="condition-display">
+                    <i class="fas fa-eye weather-icon"></i>
+                    <span class="current-condition">{{ weather.current.condition }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Forecast Summary -->
+    <div class="forecast-summary">
+        <h3><i class="fas fa-chart-line"></i> {{ weather.forecast_days | length }}-Day Detailed Forecast</h3>
+        <p class="forecast-description">
+            Hourly weather predictions with temperature, rain probability, and conditions.
+            <strong style="color: #e74c3c;">Red highlights</strong> indicate high rain chance (40%+).
+        </p>
+    </div>
+    
+    <!-- Daily Forecasts -->
+    {% for day in weather.forecast_days %}
+    <div class="forecast-day">
+        <div class="day-header">
+            <div class="day-info">
+                <i class="fas fa-calendar-day"></i>
+                <span class="day-name">
+                    {% if day.is_today %}
+                        <strong>Today</strong> - {{ day.date_formatted }}
+                    {% else %}
+                        {{ day.date_formatted }}
+                    {% endif %}
+                </span>
+                {% if day.is_today %}
+                    <span class="today-badge">Live</span>
+                {% endif %}
+            </div>
+            <div class="day-summary">
+                {% if day.hours %}
+                    <span class="hour-count">{{ day.hours | length }} hours available</span>
+                    {% set_global rain_count = 0 %}
+                    {% for hour in day.hours %}
+                        {% if hour.is_high_rain %}
+                            {% set_global rain_count = rain_count + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if rain_count > 0 %}
+                        <span class="rain-alert">
+                            <i class="fas fa-umbrella"></i> 
+                            {{ rain_count }} high-rain periods
+                        </span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if day.hours %}
+        <div class="hours-container">
+            <div class="hours-grid">
+                {% for hour in day.hours %}
+                <div class="hour-item {% if hour.is_high_rain %}high-rain{% endif %} {% if hour.is_past %}past{% endif %}">
+                    <div class="hour-header">
+                        <div class="hour-time">
+                            {{ hour.time }}
+                            {% if hour.is_past %}
+                                <small>(past)</small>
+                            {% endif %}
+                        </div>
+                        <div class="hour-temp">{{ hour.temp_c | round }}°C</div>
+                    </div>
+                    
+                    <div class="hour-details">
+                        <div class="rain-info">
+                            <i class="fas fa-tint"></i>
+                            <span class="rain-percentage {% if hour.is_high_rain %}high-rain-text{% endif %}">
+                                {{ hour.chance_of_rain | round }}%
+                            </span>
+                            {% if hour.is_high_rain %}
+                                <small class="rain-warning">High chance!</small>
+                            {% else %}
+                                <small class="rain-low">Low chance</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="condition-info">
+                            <i class="fas fa-cloud weather-condition-icon"></i>
+                            <span class="hour-condition">{{ hour.condition }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="no-data-message">
+            <i class="fas fa-exclamation-circle"></i>
+            <p>No detailed hourly data available for this day.</p>
+            <small>This might happen for dates too far in the future.</small>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    
+    <!-- Data Limitations Notice -->
+    {% if weather.requested_days > weather.forecast_days | length %}
+    <div class="limitation-notice">
+        <div class="notice-content">
+            <i class="fas fa-info-circle"></i>
+            <div class="notice-text">
+                <strong>Limited Data Available</strong>
+                <p>You requested {{ weather.requested_days }} days, but only {{ weather.forecast_days | length }} days of future data are available.</p>
+                <small>Free WeatherAPI accounts provide up to 3 days of detailed forecast data. For longer forecasts, consider upgrading your API plan.</small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Data Source Information -->
+    <div class="data-info">
+        <div class="info-grid">
+            <div class="info-item">
+                <i class="fas fa-database"></i>
+                <div>
+                    <strong>Data Coverage</strong>
+                    <small>{{ weather.forecast_days | length }} future days from {{ weather.total_days }} total API days</small>
+                </div>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-clock"></i>
+                <div>
+                    <strong>Last Updated</strong>
+                    <small><span id="current-time"></span></small>
+                </div>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-sync-alt"></i>
+                <div>
+                    <strong>Auto Refresh</strong>
+                    <small>Updates every 30 minutes</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Display current time
+    function updateTime() {
+        const now = new Date();
+        const options = { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true
+        };
+        document.getElementById('current-time').textContent = now.toLocaleDateString('en-US', options);
+    }
+    updateTime();
+    
+    // Update time every minute for accuracy
+    setInterval(updateTime, 60000);
+    
+    // Auto-refresh every 30 minutes
+    setTimeout(function() {
+        window.location.reload();
+    }, 30 * 60 * 1000);
+    
+    // Add loading state to search button
+    document.querySelector('.search-form').addEventListener('submit', function() {
+        const button = this.querySelector('.btn');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        button.disabled = true;
+    });
+</script>
+{% endblock content %}

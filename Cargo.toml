@@ -4,9 +4,26 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# Existing dependencies
 dotenvy = "0.15"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 serde = { version = "1.0", features = ["derive"] }
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 colored = "2.0"
 
+# New web dependencies
+axum = "0.7"
+tokio = { version = "1.0", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs"] }
+tera = "1.19"
+serde_json = "1.0"
+
+# Binary targets
+[[bin]]
+name = "weather-web"
+path = "src/main.rs"
+
+[[bin]]
+name = "weather-cli"
+path = "src/bin/cli.rs"
