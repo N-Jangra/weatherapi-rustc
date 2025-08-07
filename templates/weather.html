@@ -1,232 +1,432 @@
 {% extends "base.html" %}
 
-{% block title %}Weather for {{ weather.location.name }} - Weather App{% endblock title %}
-
 {% block content %}
-<!-- Quick Search Bar -->
-<div class="search-container">
-    <form class="search-form" action="/weather" method="get">
-        <div class="form-group">
-            <label for="location">
-                <i class="fas fa-map-marker-alt"></i> Search Location
-            </label>
-            <input 
-                type="text" 
-                id="location" 
-                name="location" 
-                placeholder="Try: London, New York, Tokyo..." 
-                value="{{ location }}"
-                required
-            >
-        </div>
-        
-        <div class="form-group">
-            <label for="days">
-                <i class="fas fa-calendar-alt"></i> Forecast Period
-            </label>
-            <select id="days" name="days">
-                <option value="1" {% if days == 1 %}selected{% endif %}>Today Only</option>
-                <option value="2" {% if days == 2 %}selected{% endif %}>Next 2 Days</option>
-                <option value="3" {% if days == 3 %}selected{% endif %}>Next 3 Days</option>
-                <option value="5" {% if days == 5 %}selected{% endif %}>This Week (5 days)</option>
-                <option value="7" {% if days == 7 %}selected{% endif %}>One Week</option>
-                <option value="10" {% if days == 10 %}selected{% endif %}>10 Days</option>
-                <option value="14" {% if days == 14 %}selected{% endif %}>Two Weeks</option>
-            </select>
-        </div>
-        
-        <button type="submit" class="btn">
-            <i class="fas fa-search"></i>
-            Update Forecast
-        </button>
-    </form>
-</div>
+<div class="w-full px-4 md:px-6 py-6 space-y-6">
+    <!-- Search Container -->
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+        <form class="flex flex-col md:flex-row gap-4 items-end" action="/weather" method="post">
+            <div class="w-full md:flex-1">
+                <label for="location" class="block text-sm font-medium text-gray-700 mb-2">
+                    📍 Location
+                </label>
+                <input type="text" id="location" name="location" 
+                    placeholder="{{ location }}" value="{{ location }}" required
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all">
+            </div>
+            
+            <div class="w-full md:w-48">
+                <label for="days" class="block text-sm font-medium text-gray-700 mb-2">Forecast Days</label>
+                <select id="days" name="days" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all">
+                    <option value="1" {% if days == 1 %}selected{% endif %}>1 Day</option>
+                    <option value="2" {% if days == 2 %}selected{% endif %}>2 Days</option>
+                    <option value="3" {% if days == 3 %}selected{% endif %}>3 Days</option>
+                    <option value="4" {% if days == 4 %}selected{% endif %}>4 Days</option>
+                    <option value="5" {% if days == 5 %}selected{% endif %}>5 Days</option>
+                </select>
+            </div>
+            
+            <button type="submit" 
+                class="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow hover:shadow-md">
+                 Update Forecast
+            </button>
+        </form>
+    </div>
 
-<!-- Current Weather Summary -->
-<div class="weather-card">
-    <div class="current-weather">
-        <div class="location-header">
-            <h2>
-                <i class="fas fa-map-marker-alt"></i>
-                {{ weather.location.name }}, {{ weather.location.country }}
-            </h2>
-            <div class="weather-summary">
-                <div class="temp-display">
-                    <span class="current-temp">{{ weather.current.temp_c | round }}°C</span>
-                    <span class="feels-like">({{ (weather.current.temp_c * 1.8 + 32) | round }}°F)</span>
-                </div>
-                <div class="condition-display">
-                    <i class="fas fa-eye weather-icon"></i>
-                    <span class="current-condition">{{ weather.current.condition }}</span>
-                </div>
-            </div>
-        </div>
+    <!-- Weather Header -->
+    <div class="text-center bg-white rounded-xl shadow-md p-6 border border-gray-200">
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-1">
+            📍 {{ location }}{% if country %}, {{ country }}{% endif %}
+        </h2>
+        <p class="text-gray-600 text-sm md:text-base">Weather Forecast - {{ current_time }}</p>
     </div>
-    
-    <!-- Forecast Summary -->
-    <div class="forecast-summary">
-        <h3><i class="fas fa-chart-line"></i> {{ weather.forecast_days | length }}-Day Detailed Forecast</h3>
-        <p class="forecast-description">
-            Hourly weather predictions with temperature, rain probability, and conditions.
-            <strong style="color: #e74c3c;">Red highlights</strong> indicate high rain chance (40%+).
-        </p>
-    </div>
-    
-    <!-- Daily Forecasts -->
-    {% for day in weather.forecast_days %}
-    <div class="forecast-day">
-        <div class="day-header">
-            <div class="day-info">
-                <i class="fas fa-calendar-day"></i>
-                <span class="day-name">
-                    {% if day.is_today %}
-                        <strong>Today</strong> - {{ day.date_formatted }}
-                    {% else %}
-                        {{ day.date_formatted }}
-                    {% endif %}
-                </span>
-                {% if day.is_today %}
-                    <span class="today-badge">Live</span>
-                {% endif %}
-            </div>
-            <div class="day-summary">
-                {% if day.hours %}
-                    <span class="hour-count">{{ day.hours | length }} hours available</span>
-                    {% set_global rain_count = 0 %}
-                    {% for hour in day.hours %}
-                        {% if hour.is_high_rain %}
-                            {% set_global rain_count = rain_count + 1 %}
-                        {% endif %}
+
+    <!-- Main Weather Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Dates Sidebar -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-md p-4 border border-gray-200 h-full">
+                <h3 class="font-bold text-gray-800 mb-4 text-lg">Dates</h3>
+                <div class="space-y-2">
+                    {% for date, forecasts in grouped_forecasts %}
+                    <div class="date-item cursor-pointer p-3 rounded-lg transition-all hover:bg-blue-50 hover:translate-x-1 border border-gray-200" 
+                         onclick="showDateData('{{ date }}')" data-date="{{ date }}">
+                        <div class="font-medium text-blue-600 text-center">
+                            {{ date | truncate(length=10) }}
+                        </div>
+                    </div>
                     {% endfor %}
-                    {% if rain_count > 0 %}
-                        <span class="rain-alert">
-                            <i class="fas fa-umbrella"></i> 
-                            {{ rain_count }} high-rain periods
-                        </span>
-                    {% endif %}
-                {% endif %}
+                </div>
             </div>
         </div>
-        
-        {% if day.hours %}
-        <div class="hours-container">
-            <div class="hours-grid">
-                {% for hour in day.hours %}
-                <div class="hour-item {% if hour.is_high_rain %}high-rain{% endif %} {% if hour.is_past %}past{% endif %}">
-                    <div class="hour-header">
-                        <div class="hour-time">
-                            {{ hour.time }}
-                            {% if hour.is_past %}
-                                <small>(past)</small>
-                            {% endif %}
-                        </div>
-                        <div class="hour-temp">{{ hour.temp_c | round }}°C</div>
-                    </div>
-                    
-                    <div class="hour-details">
-                        <div class="rain-info">
-                            <i class="fas fa-tint"></i>
-                            <span class="rain-percentage {% if hour.is_high_rain %}high-rain-text{% endif %}">
-                                {{ hour.chance_of_rain | round }}%
-                            </span>
-                            {% if hour.is_high_rain %}
-                                <small class="rain-warning">High chance!</small>
-                            {% else %}
-                                <small class="rain-low">Low chance</small>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="condition-info">
-                            <i class="fas fa-cloud weather-condition-icon"></i>
-                            <span class="hour-condition">{{ hour.condition }}</span>
-                        </div>
+
+        <!-- Chart Container -->
+        <div class="lg:col-span-7">
+            <div class="bg-white rounded-xl shadow-md p-6 h-96 border border-gray-200">
+                <div id="chart-status" class="flex items-center justify-center h-full text-gray-500">
+                    <div class="text-center">
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-3"></div>
+                        Loading Chart...
                     </div>
                 </div>
-                {% endfor %}
+                <canvas id="weatherChart" class="hidden w-full h-full"></canvas>
             </div>
         </div>
-        {% else %}
-        <div class="no-data-message">
-            <i class="fas fa-exclamation-circle"></i>
-            <p>No detailed hourly data available for this day.</p>
-            <small>This might happen for dates too far in the future.</small>
-        </div>
-        {% endif %}
-    </div>
-    {% endfor %}
-    
-    <!-- Data Limitations Notice -->
-    {% if weather.requested_days > weather.forecast_days | length %}
-    <div class="limitation-notice">
-        <div class="notice-content">
-            <i class="fas fa-info-circle"></i>
-            <div class="notice-text">
-                <strong>Limited Data Available</strong>
-                <p>You requested {{ weather.requested_days }} days, but only {{ weather.forecast_days | length }} days of future data are available.</p>
-                <small>Free WeatherAPI accounts provide up to 3 days of detailed forecast data. For longer forecasts, consider upgrading your API plan.</small>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- Data Source Information -->
-    <div class="data-info">
-        <div class="info-grid">
-            <div class="info-item">
-                <i class="fas fa-database"></i>
-                <div>
-                    <strong>Data Coverage</strong>
-                    <small>{{ weather.forecast_days | length }} future days from {{ weather.total_days }} total API days</small>
+
+        <!-- Weather Data Container -->
+        <div class="lg:col-span-3">
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-4">
+                    <h3 id="selected-date-title" class="font-bold text-gray-800 text-lg">Weather Data</h3>
+                    <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded-lg transition-colors border border-gray-300" 
+                            onclick="showAllData()">Show All</button>
                 </div>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-clock"></i>
-                <div>
-                    <strong>Last Updated</strong>
-                    <small><span id="current-time"></span></small>
-                </div>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-sync-alt"></i>
-                <div>
-                    <strong>Auto Refresh</strong>
-                    <small>Updates every 30 minutes</small>
+
+                <div id="weather-details-container" class="weather-details-single">
+                    {% for date, forecasts in grouped_forecasts %}
+                    <div id="data-{{ date }}" class="date-section hidden" data-date="{{ date }}">
+                        <h4 class="font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                            📅 {{ date }}
+                        </h4>
+
+                        <div class="forecast-grid-single grid gap-4">
+                            {% for forecast in forecasts %}
+                            <div class="forecast-item bg-gray-50 p-4 rounded-lg text-center transition-all hover:shadow-sm hover:bg-white border border-gray-200
+                                {% if forecast.pop and forecast.pop >= 0.4 %}border-2 border-blue-300 bg-blue-50{% endif %}">
+                                <div class="font-bold text-gray-800 text-lg mb-2">
+                                    {{ forecast.formatted_time }}
+                                </div>
+                                <div class="text-2xl font-bold text-red-500 mb-2">
+                                    {{ forecast.main.temp | round }}°C
+                                </div>
+                                <div class="font-semibold text-blue-500 mb-2">
+                                    {{ forecast.pop_percentage }}%
+                                </div>
+                                <div class="text-sm text-gray-600 capitalize leading-tight">
+                                    {{ forecast.weather[0].description | title }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    // Display current time
-    function updateTime() {
-        const now = new Date();
-        const options = { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: true
-        };
-        document.getElementById('current-time').textContent = now.toLocaleDateString('en-US', options);
+<style>
+.weather-details-single {
+    max-height: none;
+    overflow: visible;
+}
+
+.weather-details-all {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.weather-details-all::-webkit-scrollbar {
+    width: 6px;
+}
+.weather-details-all::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+.weather-details-all::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+.weather-details-all::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.forecast-grid-single {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+.forecast-grid-all {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+.date-item.active {
+    background-color: #3b82f6 !important;
+    color: white !important;
+    transform: translateX(4px) !important;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    border-color: transparent !important;
+}
+.date-item.active div {
+    color: white !important;
+}
+
+@media (min-width: 768px) {
+    .forecast-grid-single {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     }
-    updateTime();
+}
+
+@media (max-width: 1023px) {
+    .forecast-grid-single {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+}
+
+@media (max-width: 767px) {
+    .forecast-grid-single {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .forecast-grid-single {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded');
     
-    // Update time every minute for accuracy
-    setInterval(updateTime, 60000);
+    // Global variables
+    let allChartData = [];
+    let chart = null;
+    let currentSelectedDate = null;
+    let showAllMode = false;
     
-    // Auto-refresh every 30 minutes
-    setTimeout(function() {
-        window.location.reload();
-    }, 30 * 60 * 1000);
+    // Check if Chart.js is loaded
+    console.log('Checking Chart.js availability...');
+    console.log('typeof Chart:', typeof Chart);
     
-    // Add loading state to search button
-    document.querySelector('.search-form').addEventListener('submit', function() {
-        const button = this.querySelector('.btn');
-        const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-        button.disabled = true;
-    });
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded!');
+        document.getElementById('chart-status').innerHTML = 
+            '<div class="text-red-500 p-3 rounded bg-red-50 border border-red-200">❌ Chart.js failed to load<br><small class="text-sm">Chart functionality is not available</small></div>';
+        
+        // Initialize date functionality without chart
+        initializeDateFunctionality();
+        return;
+    }
+    
+    console.log('Chart.js loaded successfully');
+    document.getElementById('chart-status').classList.add('hidden');
+    document.getElementById('weatherChart').classList.remove('hidden');
+    
+    // Get chart data from template
+    const chartData = {{ chart_data | json_encode() | safe }};
+    allChartData = chartData;
+    console.log('Chart data loaded:', chartData.length, 'items');
+    
+    if (chartData.length === 0) {
+        document.getElementById('chart-status').innerHTML = 
+            '<div class="text-orange-500 p-3 rounded bg-orange-50 border border-orange-200">⚠️ No chart data available</div>';
+        document.getElementById('chart-status').classList.remove('hidden');
+        document.getElementById('weatherChart').classList.add('hidden');
+    } else {
+        // Initialize chart with all data
+        updateChart(chartData);
+    }
+    
+    // Initialize date functionality
+    initializeDateFunctionality();
+    
+    function updateChart(data) {
+        const ctx = document.getElementById('weatherChart').getContext('2d');
+        
+        const labels = [];
+        const temperatures = [];
+        const precipitation = [];
+        
+        data.forEach(item => {
+            labels.push(item.time || 'N/A');
+            temperatures.push(parseFloat(item.temp) || 0);
+            precipitation.push(parseFloat(item.pop) || 0);
+        });
+        
+        console.log('Chart labels:', labels.length);
+        console.log('Temperature data:', temperatures.length);
+        
+        const chartConfig = {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: temperatures,
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.2)',
+                    tension: 0.4,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Rain Chance (%)',
+                    data: precipitation,
+                    borderColor: '#4ecdc4',
+                    backgroundColor: 'rgba(78, 205, 196, 0.2)',
+                    tension: 0.4,
+                    yAxisID: 'y1',
+                    borderDash: [5, 5]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: currentSelectedDate ? 
+                            `Weather Forecast - {{ location }}, {{ country }} (${currentSelectedDate})` :
+                            'Weather Forecast - {{ location }}, {{ country }}'
+                    },
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Rain Chance (%)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                        max: 100,
+                        min: 0
+                    }
+                }
+            }
+        };
+
+        try {
+            if (chart) {
+                chart.destroy();
+            }
+            chart = new Chart(ctx, chartConfig);
+            console.log('Chart created successfully');
+        } catch (error) {
+            console.error('Error creating chart:', error);
+            document.getElementById('chart-status').innerHTML = 
+                '<div class="text-red-500 p-3 rounded bg-red-50 border border-red-200">❌ Chart rendering failed<br><small class="text-sm">' + error.message + '</small></div>';
+            document.getElementById('chart-status').classList.remove('hidden');
+            document.getElementById('weatherChart').classList.add('hidden');
+        }
+    }
+
+    function initializeDateFunctionality() {
+        // Make functions global so they can be called from onclick handlers
+        window.showDateData = function(selectedDate) {
+            currentSelectedDate = selectedDate;
+            showAllMode = false;
+            
+            // Update container class for single day view
+            const container = document.getElementById('weather-details-container');
+            container.className = 'weather-details-single';
+            
+            // Update active date indicator
+            document.querySelectorAll('.date-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const activeItem = document.querySelector(`[data-date="${selectedDate}"]`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
+            
+            // Hide all date sections
+            document.querySelectorAll('.date-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show only selected date section with single-day grid
+            const selectedSection = document.getElementById(`data-${selectedDate}`);
+            if (selectedSection) {
+                selectedSection.classList.remove('hidden');
+                // Update grid class for single day
+                const grid = selectedSection.querySelector('.forecast-grid-single');
+                if (grid) {
+                    grid.className = 'forecast-grid-single grid gap-4';
+                }
+            }
+            
+            // Update chart with selected date data (if chart is available)
+            if (typeof Chart !== 'undefined' && chart) {
+                const filteredData = allChartData.filter(item => item.date === selectedDate);
+                console.log('Filtering data for date:', selectedDate, 'Found:', filteredData.length, 'items');
+                updateChart(filteredData);
+            }
+            
+            // Update title
+            const titleElement = document.getElementById('selected-date-title');
+            if (titleElement) {
+                titleElement.textContent = `Forecast for ${selectedDate}`;
+            }
+        };
+
+        window.showAllData = function() {
+            currentSelectedDate = null;
+            showAllMode = true;
+            
+            // Update container class for show all view (with scroll)
+            const container = document.getElementById('weather-details-container');
+            container.className = 'weather-details-all';
+            
+            // Remove active state from all date items
+            document.querySelectorAll('.date-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show all date sections with compact grid
+            document.querySelectorAll('.date-section').forEach(section => {
+                section.classList.remove('hidden');
+                // Update grid class for show all
+                const grid = section.querySelector('.forecast-grid-single');
+                if (grid) {
+                    grid.className = 'forecast-grid-all grid gap-3';
+                }
+            });
+            
+            // Update chart with all data (if chart is available)
+            if (typeof Chart !== 'undefined' && chart) {
+                updateChart(allChartData);
+            }
+            
+            // Update title
+            const titleElement = document.getElementById('selected-date-title');
+            if (titleElement) {
+                titleElement.textContent = 'Weather Data';
+            }
+        };
+
+        // Initialize with first date selected
+        const firstDate = document.querySelector('.date-item');
+        if (firstDate) {
+            const firstDateValue = firstDate.getAttribute('data-date');
+            if (firstDateValue) {
+                console.log('Initializing with first date:', firstDateValue);
+                window.showDateData(firstDateValue);
+            }
+        }
+    }
+});
 </script>
-{% endblock content %}
+{% endblock %}

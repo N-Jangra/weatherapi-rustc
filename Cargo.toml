@@ -1,29 +1,17 @@
 [package]
-name = "weather_cli"
+name = "weather_web"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Existing dependencies
 dotenvy = "0.15"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
+reqwest = { version = "0.11", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
-colored = "2.0"
-
-# New web dependencies
-axum = "0.7"
 tokio = { version = "1.0", features = ["full"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["fs"] }
+axum = "0.7"
 tera = "1.19"
-serde_json = "1.0"
-
-# Binary targets
-[[bin]]
-name = "weather-web"
-path = "src/main.rs"
-
-[[bin]]
-name = "weather-cli"
-path = "src/bin/cli.rs"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "trace"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
